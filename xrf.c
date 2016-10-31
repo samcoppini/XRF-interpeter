@@ -337,29 +337,12 @@ void execute_code() {
 }
 
 int main(int argc, char **argv) {
-    const char *filename = NULL;
-    int i;
-
-    for (i = 1; i < argc; i++) {
-        if (*argv[i] != '-') {
-            if (filename != NULL) {
-                fprintf(stderr, "Only one file at a time please!\n");
-                exit(1);
-            }
-            filename = argv[i];
-        }
-    }
-
-    if (filename == NULL) {
-        fprintf(stderr, "Error! No filename given!\n");
-        exit(1);
-    }
-
-    read_xrf_file(filename);
-
+	if (argc == 1) {
+		fprintf(stderr, "Error! No filename given!");
+		exit(1);
+	}
+    read_xrf_file(argv[1]);
     srand(time(NULL));
-
     execute_code();
-
     return 0;
 }
