@@ -12,6 +12,8 @@ struct Stack {
     struct Stack *next; /* Pointer to the next node */
 } *stack, *bottom;
 
+int stack_size = 0;
+
 /* A struct for keeping track of the read-in XRF code */
 struct Code {
     char *commands; /* Array of all the commands */
@@ -46,6 +48,8 @@ void push_stack(int val) {
        bottom to reflect that there's actually something in the stack */
     if (bottom == NULL)
         bottom = stack;
+
+    stack_size++;
 }
 
 /* Pops the stack, and returns the popped value */
@@ -67,6 +71,9 @@ int pop_stack() {
        to anything */
     if (stack == NULL)
         bottom = stack;
+
+    stack_size--;
+
     return val;
 }
 
@@ -113,32 +120,23 @@ void send_top_to_bottom() {
 
 /* Randomizes the order of the stack */
 void randomize_stack() {
-    unsigned i, *vals, num_vals, num_allocated;
+    unsigned i, *vals;
     struct Stack *node;
 
-    vals = malloc(sizeof(int));
-    num_allocated = 1;
-    num_vals = 0;
+    vals = malloc(sizeof(int) * stack_size);
+    if (vals == NULL) {
+        fprintf(stderr, "Error! Unable to allocate additional"
+                        " space\n!");
+    }
 
     /* Goes through the stack and stores the values in an array */
-    for (node = stack; node != NULL; node = node->next) {
-        if (num_vals == num_allocated) {
-            unsigned *new_vals;
-            num_allocated <<= 1;
-            new_vals = realloc(vals, num_allocated * sizeof(int));
-            if (vals == NULL) {
-                fprintf(stderr, "Error! Unable to allocate additional"
-                                " space\n!");
-                free(vals);
-                exit(1);
-            }
-            vals = new_vals;
-        }
-        vals[num_vals++] = node->val;
+    for (i = 0, node = stack; node != NULL; node = node->next, i++) {
+        vals[i] = node->val;
+        node = node->next;
     }
 
     /* Shuffles the array of values */
-    for (i = num_vals - 1; i > 0; i--) {
+    for (i = stack_size - 1; i > 0; i--) {
         unsigned swap_index = rand() % (i + 1);
         int temp = vals[swap_index];
         vals[swap_index] = vals[i];
