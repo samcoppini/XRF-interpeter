@@ -164,8 +164,7 @@ void free_xrf_code() {
 /* Reads a given XRF file */
 void read_xrf_file(const char *filename) {
     FILE *file = fopen(filename, "r");
-    int cur_cmd;
-    char c;
+    int cur_cmd, c;
 
     if (file == NULL) {
         fprintf(stderr, "Error! Unable to open %s!\n", filename);
