@@ -24,6 +24,10 @@ struct Code {
 /* Returns a pointer to a newly-malloc'd node with a value of val */
 struct Stack *new_stack_node(int val) {
     struct Stack *node = malloc(sizeof(struct Stack));
+    if (node == NULL) {
+        fprintf(stderr, "Error! Unable to allocate additional stack space!\n");
+        exit(1);
+    }
     node->next = NULL;
     node->val = val;
     return node;
