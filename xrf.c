@@ -12,7 +12,7 @@ struct Stack {
     struct Stack *next; /* Pointer to the next node */
 } *stack, *bottom;
 
-int stack_size = 0;
+int stack_size = 1;
 
 /* A struct for keeping track of the read-in XRF code */
 struct Code {
@@ -136,7 +136,6 @@ void randomize_stack() {
     /* Goes through the stack and stores the values in an array */
     for (i = 0, node = stack; node != NULL; node = node->next, i++) {
         vals[i] = node->val;
-        node = node->next;
     }
 
     /* Shuffles the array of values */
