@@ -219,7 +219,6 @@ void read_xrf_file(const char *filename) {
 
 /* Executes a chunk of code */
 void execute_chunk(const char *chunk, bool visited) {
-    struct Stack *temp;
     unsigned i, temp_val;
 
     for (i = 0; i < COMMANDS_PER_CHUNK; i++) {
@@ -272,9 +271,7 @@ void execute_chunk(const char *chunk, bool visited) {
                     exit(1);
                 }
                 stack->next->val += stack->val;
-                temp = stack;
-                stack = stack->next;
-                free(temp);
+                pop_stack();
                 break;
             case '8':
                 if (!visited) i++;
