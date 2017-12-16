@@ -9,8 +9,8 @@ const unsigned int COMMANDS_PER_CHUNK = 5;
 /* A struct for each node of the stack */
 struct Stack {
     unsigned int val; /* The value held by this node */
-    struct Stack *next; /* Pointer to the next node */
-} *stack, *bottom;
+    struct Stack *next, *prev; /* Pointer to the next and previous node */
+} *top, *bottom;
 
 int stack_size = 1;
 
@@ -29,103 +29,104 @@ struct Stack *new_stack_node(int val) {
         exit(1);
     }
     node->next = NULL;
+    node->prev = NULL;
     node->val = val;
     return node;
 }
 
 /* Frees the stack */
 void free_stack() {
-    struct Stack *node;
-    while (stack != NULL) {
-        node = stack;
-        stack = stack->next;
-        free(node);
+    struct Stack *temp;
+    while (bottom != NULL) {
+        temp = bottom;
+        bottom = bottom->prev;
+        free(temp);
     }
 }
 
 /* Pushes a new node onto the stack */
 void push_stack(int val) {
-    struct Stack *node = new_stack_node(val);
-    node->next = stack;
-    stack = node;
-    /* If the stack was formerly empty, we need to update the pointer to the
-       bottom to reflect that there's actually something in the stack */
-    if (bottom == NULL)
-        bottom = stack;
-
+    if (top->prev != NULL) {
+        /* If we've already allocated a node, we just make the
+           already-allocated node the new top */
+        top = top->prev;
+        top->val = val;
+    } else {
+        struct Stack *node = new_stack_node(val);
+        top->prev = node;
+        node->next = top;
+        top = node;
+    }
     stack_size++;
 }
 
 /* Pops the stack, and returns the popped value */
 int pop_stack() {
-    struct Stack *node;
-    int val;
-
-    if (stack == NULL) {
-        fprintf(stderr, "Error! Unable to pop empty stack!\n");
+    if (stack_size == 0) {
+        fprintf(stderr, "Error! Can't pop an empty stack!\n");
         exit(1);
+    } else {
+        int to_return = top->val;
+        top = top->next;
+        stack_size--;
+        return to_return;
     }
-
-    node = stack;
-    val = stack->val;
-    stack = stack->next;
-    free(node);
-
-    /* If the stack is empty, update the bottom pointer so it isn't pointing
-       to anything */
-    if (stack == NULL)
-        bottom = stack;
-
-    stack_size--;
-
-    return val;
 }
 
 /* Swaps the top two elements of the stack */
 void swap_stack() {
     int temp;
 
-    if (stack == NULL || stack->next == NULL) {
-        fprintf(stderr, "Error! Can't swap the top two elements on a%s"
-                        " stack\n", stack ? " one-element" : "n empty");
+    if (stack_size < 2) {
+        fprintf(stderr, "Error! Can't swap the top two elements on a%s stack\n",
+                        stack_size == 1 ? " one-element" : "n empty");
         exit(1);
     }
 
-    temp = stack->val;
-    stack->val = stack->next->val;
-    stack->next->val = temp;
+    temp = top->val;
+    top->val = top->next->val;
+    top->next->val = temp;
 }
 
 /* Duplicates the top element of the stack */
 void dup_stack() {
-    if (stack == NULL) {
+    if (stack_size == 0) {
         fprintf(stderr, "Error! Nothing on the stack to be duplicated!\n");
         exit(1);
     }
-    push_stack(stack->val);
+    push_stack(top->val);
 }
 
 /* Sends the top node of the stack to the bottom of the stack */
 void send_top_to_bottom() {
-    struct Stack *node;
-    if (stack == NULL) {
+    if (stack_size == 0) {
         fprintf(stderr, "Error! Can't send nonexistent value to the bottom of"
                         " the stack!\n");
         exit(1);
-    }
-    if (stack->next == NULL)
+    } else if (stack_size == 1) {
         return;
-    node = stack;
-    stack = stack->next;
-    bottom->next = node;
-    bottom = bottom->next;
-    bottom->next = NULL;
+    } else {
+        struct Stack *temp = top;
+        top = top->next;
+        top->prev = temp->prev;
+        if (temp->prev != NULL) {
+            temp->prev->next = top;
+        }
+        bottom->next = temp;
+        temp->prev = bottom;
+        bottom = temp;
+        temp->next = NULL;
+    }
 }
 
 /* Randomizes the order of the stack */
 void randomize_stack() {
     unsigned i, *vals;
     struct Stack *node;
+
+    if (stack_size == 0) {
+        return;
+    }
 
     vals = malloc(sizeof(int) * stack_size);
     if (vals == NULL) {
@@ -134,7 +135,7 @@ void randomize_stack() {
     }
 
     /* Goes through the stack and stores the values in an array */
-    for (i = 0, node = stack; node != NULL; node = node->next, i++) {
+    for (i = 0, node = top; node != NULL; node = node->next, i++) {
         vals[i] = node->val;
     }
 
@@ -147,7 +148,7 @@ void randomize_stack() {
     }
 
     /* Goes through the list, assigning to each node a shuffled value */
-    for (i = 0, node = stack; node != NULL; node = node->next, i++) {
+    for (i = 0, node = top; node != NULL; node = node->next, i++) {
         node->val = vals[i];
     }
 
@@ -231,7 +232,7 @@ void execute_chunk(const char *chunk, bool visited) {
                     push_stack(temp_val);
                 break;
             case '1':
-                if (stack == NULL) {
+                if (stack_size == 0) {
                     fprintf(stderr, "Error! Cannot output nonexistent"
                                     " value!\n");
                     exit(1);
@@ -248,29 +249,29 @@ void execute_chunk(const char *chunk, bool visited) {
                 swap_stack();
                 break;
             case '5':
-                if (stack == NULL) {
+                if (stack_size == 0) {
                     fprintf(stderr, "Error! Cannot increment nonexistent "
                                     "value!\n");
                     exit(1);
                 }
-                stack->val += 1;
+                top->val += 1;
                 break;
             case '6':
-                if (stack == NULL) {
+                if (stack_size == 0) {
                     fprintf(stderr, "Error! Cannot decrement nonexistent "
                                     "value!\n");
                     exit(1);
                 }
-                if (stack->val > 0)
-                    stack->val -= 1;
+                if (top->val > 0)
+                    top->val -= 1;
                 break;
             case '7':
-                if (stack == NULL || stack->next == NULL) {
+                if (stack_size < 2) {
                     fprintf(stderr, "Error! Cannot add the top values of a%s\n",
-                            stack ? "one-value stack.": "n empty stack.");
+                            stack_size ? " one-value stack.": "n empty stack.");
                     exit(1);
                 }
-                stack->next->val += stack->val;
+                top->next->val += top->val;
                 pop_stack();
                 break;
             case '8':
@@ -290,17 +291,17 @@ void execute_chunk(const char *chunk, bool visited) {
                 randomize_stack();
                 break;
             case 'E':
-                if (stack == NULL || stack->next == NULL) {
+                if (stack_size < 2) {
                     fprintf(stderr, "Error! Cannot get the difference of the"
                                     " top two values of a%s!\n",
-                            stack ? " one-value stack": "n empty stack");
+                            stack_size ? " one-value stack": "n empty stack");
                     exit(1);
                 }
                 temp_val = pop_stack();
-                if (temp_val <= stack->val)
-                    stack->val -= temp_val;
+                if (temp_val <= top->val)
+                    top->val -= temp_val;
                 else
-                    stack->val = temp_val - stack->val;
+                    top->val = temp_val - top->val;
                 break;
         }
     }
@@ -310,8 +311,8 @@ void execute_chunk(const char *chunk, bool visited) {
 void execute_code() {
     unsigned cur_chunk = 0;
 
-    stack = new_stack_node(0);
-    bottom = stack;
+    top = new_stack_node(0);
+    bottom = top;
     atexit(free_stack);
 
     while (true) {
@@ -319,15 +320,15 @@ void execute_code() {
                       code.visited[cur_chunk]);
 
         code.visited[cur_chunk] = true;
-        if (stack == NULL) {
+        if (stack_size == 0) {
             fprintf(stderr, "Error! Can't have an empty stack upon reaching "
                             "the end of a chunk!\n");
             exit(1);
         }
-        cur_chunk = stack->val;
+        cur_chunk = top->val;
         if (cur_chunk >= code.len / COMMANDS_PER_CHUNK) {
             fprintf(stderr, "Error! Cannot go to nonexistent chunk %u!\n",
-                    stack->val);
+                    top->val);
             exit(1);
         }
     }
