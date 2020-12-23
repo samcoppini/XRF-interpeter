@@ -335,10 +335,10 @@ void execute_code() {
 }
 
 int main(int argc, char **argv) {
-	if (argc == 1) {
-		fprintf(stderr, "Error! No filename given!");
-		exit(1);
-	}
+    if (argc == 1) {
+        fprintf(stderr, "Error! No filename given!");
+        exit(1);
+    }
     read_xrf_file(argv[1]);
     srand(time(NULL));
     execute_code();
